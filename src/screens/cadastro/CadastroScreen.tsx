@@ -1,6 +1,7 @@
 // Arquivo: src/screens/CadastroScreen.tsx
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+// IMPORTANTE: Adicionamos o 'Alert' aqui na importação do react-native
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { styles } from './styles';
 
 export default function CadastroScreen() {
@@ -9,15 +10,17 @@ export default function CadastroScreen() {
   const [cpf, setCpf] = useState('');
   const [telefone, setTelefone] = useState('');
   const [cep, setCep] = useState('');
+  const [numero, setNumero] = useState(''); // Adicionado estado para o campo ao lado do CEP
   const [termosAceitos, setTermosAceitos] = useState(false);
 
   const handleCadastro = () => {
     if (!termosAceitos) {
-      alert("Você precisa aceitar os termos para continuar.");
+      // Usando o Alert nativo do React Native
+      Alert.alert("Atenção", "Você precisa aceitar os termos para continuar.");
       return;
     }
-    console.log("Dados salvos:", { nome, email, cpf, telefone, cep });
-    alert("Conta criada com sucesso!");
+    console.log("Dados salvos:", { nome, email, cpf, telefone, cep, numero });
+    Alert.alert("Sucesso!", "Conta criada com sucesso!");
   };
 
   return (
@@ -70,8 +73,14 @@ export default function CadastroScreen() {
           />
         </View>
         <View style={styles.halfInput}>
-            <Text style={styles.label}> </Text>
-            <TextInput style={[styles.input, { marginBottom: 0 }]} />
+            {/* Transformei o campo vazio em "Número" */}
+            <Text style={styles.label}>Número</Text>
+            <TextInput 
+              style={[styles.input, { marginBottom: 0 }]} 
+              keyboardType="numeric"
+              value={numero}
+              onChangeText={setNumero}
+            />
         </View>
       </View>
 

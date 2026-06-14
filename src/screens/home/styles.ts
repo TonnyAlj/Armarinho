@@ -1,17 +1,19 @@
 // Arquivo: src/screens/HomeScreen.styles.ts
 import { StyleSheet } from 'react-native';
+import Constants from 'expo-constants'; // Adicione esta linha
 
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7F1E5', // O fundo creme padrão
+    backgroundColor: '#F7F1E5',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 50, // Espaço para não ficar atrás do relógio/bateria do celular
+    // A MÁGICA AQUI: Pega a altura exata da barra de status do celular + 15 de margem
+    paddingTop: Constants.statusBarHeight + 15, 
     paddingBottom: 15,
   },
   headerTitle: {
@@ -20,7 +22,7 @@ export const styles = StyleSheet.create({
     color: '#A55C45',
   },
   banner: {
-    backgroundColor: '#D0A28C', // Cor do banner baseada no protótipo
+    backgroundColor: '#D0A28C',
     marginHorizontal: 20,
     padding: 20,
     borderRadius: 10,
@@ -50,7 +52,7 @@ export const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#EADCC8', // Um creme um pouco mais escuro
+    backgroundColor: '#EADCC8',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 5,

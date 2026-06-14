@@ -3,7 +3,8 @@ import { StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    // Substituímos flex: 1 por flexGrow: 1 para o ScrollView funcionar perfeitamente
+    flexGrow: 1, 
     backgroundColor: '#F7F1E5',
     padding: 30,
     justifyContent: 'center',

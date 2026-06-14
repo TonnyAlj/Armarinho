@@ -1,4 +1,5 @@
 // Arquivo: App.tsx
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import React from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
@@ -57,12 +58,13 @@ function MainTabs() {
 // 2. A nossa Pilha principal continua igual, mas agora a "Home" é o nosso Módulo de Abas!
 export default function App() {
   return (
-    <NavigationContainer>
-      <StatusBar style="auto" />
-      <Stack.Navigator initialRouteName="Login">
-        
-        <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
-        <Stack.Screen 
+    <SafeAreaProvider>
+      <NavigationContainer>
+        <StatusBar style="auto" />
+        <Stack.Navigator initialRouteName="Login">
+          
+          <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+          <Stack.Screen 
           name="Cadastro" 
           component={CadastroScreen} 
           options={{ 
@@ -78,5 +80,6 @@ export default function App() {
 
       </Stack.Navigator>
     </NavigationContainer>
+    </SafeAreaProvider>
   );
 }
