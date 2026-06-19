@@ -1,17 +1,18 @@
 // Arquivo: App.tsx
-import { SafeAreaProvider } from 'react-native-safe-area-context';
 import React from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Feather } from '@expo/vector-icons'; // Nossos ícones para o menu
+import { Feather } from '@expo/vector-icons';
 
-// Importando as telas da Pilha
+// 1. IMPORTANDO AS TELAS DA PILHA (Autenticação e Telas Soltas)
 import LoginScreen from './src/screens/login/LoginScreen';
 import CadastroScreen from './src/screens/cadastro/CadastroScreen';
+import DetalhesProdutoScreen from './src/screens/detalhes/DetalhesProdutoScreen';
 
-// Importando as telas das Abas
+// 2. IMPORTANDO AS TELAS DAS ABAS (Menu Inferior)
 import HomeScreen from './src/screens/home/HomeScreen';
 import BuscaScreen from './src/screens/busca/BuscaScreen';
 import CarrinhoScreen from './src/screens/carrinho/CarrinhoScreen';
@@ -21,20 +22,18 @@ import PerfilScreen from './src/screens/perfil/PerfilScreen';
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-// 1. Criamos um "Módulo de Abas" separado
+// --- MÓDULO DE ABAS (Menu Inferior) ---
 function MainTabs() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        headerShown: false, // Esconde o cabeçalho padrão de todas as telas
-        tabBarActiveTintColor: '#C56A47', // Cor do ícone selecionado (Terracota)
-        tabBarInactiveTintColor: '#A55C45', // Cor do ícone inativo
-        tabBarStyle: { backgroundColor: '#F7F1E5', borderTopColor: '#EADCC8' }, // Cor de fundo do menu
+        headerShown: false, 
+        tabBarActiveTintColor: '#C56A47', 
+        tabBarInactiveTintColor: '#A55C45', 
+        tabBarStyle: { backgroundColor: '#F7F1E5', borderTopColor: '#EADCC8' },
         
-        // Essa função escolhe o ícone certo dependendo do nome da tela
         tabBarIcon: ({ color, size }) => {
           let iconName: any = 'home';
-
           if (route.name === 'HomeTab') iconName = 'home';
           else if (route.name === 'BuscaTab') iconName = 'search';
           else if (route.name === 'CarrinhoTab') iconName = 'shopping-cart';
@@ -45,7 +44,6 @@ function MainTabs() {
         },
       })}
     >
-      {/* Nomes das rotas no menu (terminam com Tab para não confundir com a pilha) */}
       <Tab.Screen name="HomeTab" component={HomeScreen} options={{ tabBarLabel: 'Home' }} />
       <Tab.Screen name="BuscaTab" component={BuscaScreen} options={{ tabBarLabel: 'Busca' }} />
       <Tab.Screen name="CarrinhoTab" component={CarrinhoScreen} options={{ tabBarLabel: 'Carrinho' }} />
@@ -55,7 +53,7 @@ function MainTabs() {
   );
 }
 
-// 2. A nossa Pilha principal continua igual, mas agora a "Home" é o nosso Módulo de Abas!
+// --- PILHA DE NAVEGAÇÃO PRINCIPAL ---
 export default function App() {
   return (
     <SafeAreaProvider>
@@ -64,22 +62,26 @@ export default function App() {
         <Stack.Navigator initialRouteName="Login">
           
           <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+          
           <Stack.Screen 
-          name="Cadastro" 
-          component={CadastroScreen} 
-          options={{ 
-            title: 'Voltar',
-            headerStyle: { backgroundColor: '#F7F1E5' },
-            headerTintColor: '#A55C45',
-            headerShadowVisible: false,
-          }} 
-        />
-        
-        {/* A MÁGICA ACONTECE AQUI: Quando fazemos login, vamos para o MainTabs */}
-        <Stack.Screen name="Home" component={MainTabs} options={{ headerShown: false }} />
+            name="Cadastro" 
+            component={CadastroScreen} 
+            options={{ 
+              title: 'Voltar',
+              headerStyle: { backgroundColor: '#F7F1E5' },
+              headerTintColor: '#A55C45',
+              headerShadowVisible: false,
+            }} 
+          />
+          
+          {/* A tela "Home" carrega todas as abas de uma vez */}
+          <Stack.Screen name="Home" component={MainTabs} options={{ headerShown: false }} />
 
-      </Stack.Navigator>
-    </NavigationContainer>
+          {/* A nova tela de Detalhes fica aqui, pois ela abre "por cima" das abas */}
+          <Stack.Screen name="DetalhesProduto" component={DetalhesProdutoScreen} options={{ headerShown: false }} />
+
+        </Stack.Navigator>
+      </NavigationContainer>
     </SafeAreaProvider>
   );
 }
