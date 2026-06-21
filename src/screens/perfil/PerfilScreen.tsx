@@ -1,25 +1,20 @@
 // Arquivo: src/screens/perfil/PerfilScreen.tsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import Constants from 'expo-constants';
-import { styles } from './styles';
 
-// 1. DADOS SIMULADOS (Mock)
-const USUARIO = {
-  nome: 'Tonny Neto',
-  email: 'tonny@email.com',
-  membroDesde: '2026',
-};
+// 1. IMPORTAÇÕES DO FIREBASE
+import { doc, getDoc } from 'firebase/firestore';
+import { signOut } from 'firebase/auth';
+import { auth, db } from '../../services/firebaseConfig';
 
-// 2. COMPONENTE REUTILIZÁVEL (Mini-componente)
-// Criamos isso para não ter que repetir as Views e Textos de cada botão do menu.
-// O TypeScript nos ajuda a definir que esse botão precisa de um 'icon', um 'title' e uma função 'onPress'.
+// Mini-componente de botão do menu
 interface MenuItemProps {
-  icon: any; // Usamos 'any' aqui para facilitar com os nomes dos ícones do Feather
+  icon: any; 
   title: string;
   onPress: () => void;
-  isDestructive?: boolean; // Propriedade opcional para o botão de "Sair" ficar vermelho
+  isDestructive?: boolean; 
 }
 
 const MenuItem = ({ icon, title, onPress, isDestructive = false }: MenuItemProps) => (
@@ -30,14 +25,47 @@ const MenuItem = ({ icon, title, onPress, isDestructive = false }: MenuItemProps
         {title}
       </Text>
     </View>
-    {/* A setinha para a direita indica que aquele botão abre uma nova tela */}
     {!isDestructive && <Feather name="chevron-right" size={20} color="#EADCC8" />}
   </TouchableOpacity>
 );
 
 export default function PerfilScreen({ navigation }: any) {
   
-  // 3. LÓGICA DE LOGOUT (Sair da Conta)
+  // 2. ESTADOS PARA OS DADOS DO BANCO
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [nomeUsuario, setNomeUsuario] = useState('Carregando...');
+  const [emailUsuario, setEmailUsuario] = useState('');
+
+  // 3. BUSCANDO OS DADOS ASSIM QUE A TELA ABRE
+  useEffect(() => {
+    const carregarDadosUsuario = async () => {
+      // Verifica se tem alguém logado
+      if (auth.currentUser) {
+        setEmailUsuario(auth.currentUser.email || ''); // Pega o e-mail da sessão
+        
+        try {
+          // Vai lá no Firestore, na coleção 'usuarios', e busca o documento deste usuário
+          const userDoc = await getDoc(doc(db, 'usuarios', auth.currentUser.uid));
+          
+          if (userDoc.exists()) {
+            setNomeUsuario(userDoc.data().nome); // Atualiza a tela com o nome real
+            
+            // Se o campo isAdmin for true, libera o painel do lojista!
+            if (userDoc.data().isAdmin) {
+              setIsAdmin(true);
+            }
+          }
+        } catch (error) {
+          console.log("Erro ao buscar dados do usuário:", error);
+          setNomeUsuario("Usuário");
+        }
+      }
+    };
+
+    carregarDadosUsuario();
+  }, []);
+
+  // 4. LÓGICA DE LOGOUT REAL NA NUVEM
   const handleLogout = () => {
     Alert.alert(
       "Sair da Conta",
@@ -47,12 +75,13 @@ export default function PerfilScreen({ navigation }: any) {
         { 
           text: "Sair", 
           style: "destructive",
-          onPress: () => {
-            // Volta para a tela de Login e limpa o histórico de navegação
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'Login' }],
-            });
+          onPress: async () => {
+            try {
+              await signOut(auth); // Desconecta do servidor do Google
+              navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+            } catch (error) {
+              Alert.alert("Erro", "Não foi possível sair da conta.");
+            }
           }
         }
       ]
@@ -62,58 +91,38 @@ export default function PerfilScreen({ navigation }: any) {
   return (
     <ScrollView style={styles.container}>
       
-      {/* CABEÇALHO DO PERFIL (Foto e Nome) */}
       <View style={styles.profileHeader}>
         <View style={styles.avatarContainer}>
-          {/* Pegamos a primeira letra do nome para o Avatar */}
-          <Text style={styles.avatarText}>{USUARIO.nome.charAt(0)}</Text>
+          {/* Pega a primeira letra do nome que veio do banco */}
+          <Text style={styles.avatarText}>{nomeUsuario.charAt(0).toUpperCase()}</Text>
         </View>
-        <Text style={styles.userName}>{USUARIO.nome}</Text>
-        <Text style={styles.userEmail}>{USUARIO.email}</Text>
+        <Text style={styles.userName}>{nomeUsuario}</Text>
+        <Text style={styles.userEmail}>{emailUsuario}</Text>
       </View>
 
-      {/* SEÇÃO DE OPÇÕES (Utilizando nosso componente reutilizável) */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Minha Conta</Text>
-        
-        <MenuItem 
-          icon="map-pin" 
-          title="Endereços de Entrega" 
-          onPress={() => Alert.alert("Aviso", "Tela de endereços em construção!")} 
-        />
-        <MenuItem 
-          icon="credit-card" 
-          title="Formas de Pagamento" 
-          onPress={() => Alert.alert("Aviso", "Tela de pagamentos em construção!")} 
-        />
-        <MenuItem 
-          icon="bell" 
-          title="Notificações" 
-          onPress={() => Alert.alert("Aviso", "Tela de notificações em construção!")} 
-        />
+        <MenuItem icon="map-pin" title="Endereços de Entrega" onPress={() => Alert.alert("Aviso", "Em construção!")} />
+        <MenuItem icon="credit-card" title="Formas de Pagamento" onPress={() => Alert.alert("Aviso", "Em construção!")} />
+        <MenuItem icon="file-text" title="Meus Pedidos" onPress={() => navigation.navigate('PedidosTab')} />
       </View>
+
+      {/* 5. ÁREA EXCLUSIVA DO LOJISTA (Só aparece se isAdmin for true) */}
+      {isAdmin && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Painel do Lojista</Text>
+          <MenuItem 
+            icon="plus-square" 
+            title="Cadastrar Novo Produto" 
+            onPress={() => navigation.navigate('CadastroProduto')} 
+          />
+        </View>
+      )}
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Mais</Text>
-        
-        <MenuItem 
-          icon="help-circle" 
-          title="Central de Ajuda" 
-          onPress={() => Alert.alert("Aviso", "Suporte em construção!")} 
-        />
-        <MenuItem 
-          icon="settings" 
-          title="Configurações" 
-          onPress={() => Alert.alert("Aviso", "Tela de configurações em construção!")} 
-        />
-        
-        {/* BOTÃO DE SAIR (Passando a propriedade isDestructive como true) */}
-        <MenuItem 
-          icon="log-out" 
-          title="Sair da Conta" 
-          onPress={handleLogout} 
-          isDestructive={true} 
-        />
+        <MenuItem icon="settings" title="Configurações" onPress={() => Alert.alert("Aviso", "Em construção!")} />
+        <MenuItem icon="log-out" title="Sair da Conta" onPress={handleLogout} isDestructive={true} />
       </View>
 
       <Text style={styles.versionText}>Ponto a Ponto App v1.0.0</Text>
@@ -121,3 +130,19 @@ export default function PerfilScreen({ navigation }: any) {
     </ScrollView>
   );
 }
+
+// Os estilos continuam os mesmos que você já tinha no arquivo!
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#F7F1E5' },
+  profileHeader: { alignItems: 'center', paddingTop: Constants.statusBarHeight + 30, paddingBottom: 30, backgroundColor: '#FFF', borderBottomWidth: 1, borderBottomColor: '#EADCC8' },
+  avatarContainer: { width: 90, height: 90, borderRadius: 45, backgroundColor: '#C56A47', justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
+  avatarText: { fontSize: 40, fontWeight: 'bold', color: '#FFF' },
+  userName: { fontSize: 22, fontWeight: 'bold', color: '#333', marginBottom: 5 },
+  userEmail: { fontSize: 14, color: '#888' },
+  section: { marginTop: 25, paddingHorizontal: 20 },
+  sectionTitle: { fontSize: 14, fontWeight: 'bold', color: '#A55C45', marginBottom: 10, textTransform: 'uppercase' },
+  menuItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFF', paddingVertical: 15, paddingHorizontal: 20, borderRadius: 10, marginBottom: 10, borderWidth: 1, borderColor: '#EADCC8' },
+  menuItemLeft: { flexDirection: 'row', alignItems: 'center' },
+  menuItemText: { fontSize: 16, color: '#333', marginLeft: 15, fontWeight: '500' },
+  versionText: { textAlign: 'center', color: '#A55C45', marginTop: 30, marginBottom: 40, fontSize: 12 }
+});

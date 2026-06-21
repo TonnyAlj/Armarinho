@@ -1,26 +1,60 @@
-// Arquivo: src/screens/LoginScreen.tsx
+// Arquivo: src/screens/login/LoginScreen.tsx
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
-import { styles } from './styles'; // Mantendo a importação exata da sua pasta
+import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { styles } from './styles';
+
+// 1. IMPORTAÇÕES DO FIREBASE
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../../services/firebaseConfig';
 
 export default function LoginScreen({ navigation }: any) {
-  // 1. Criamos os estados para guardar o e-mail/usuário e a senha
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  
+  // Estado para controlar a animação de carregamento
+  const [loading, setLoading] = useState(false);
 
-  // 2. Função de validação do Login Falso
-  const handleLogin = () => {
-    // Retira os espaços em branco e deixa tudo minúsculo para evitar erros de digitação
-    const usuarioDigitado = email.trim().toLowerCase();
+  // 2. FUNÇÃO ASSÍNCRONA DE LOGIN
+  const handleLogin = async () => {
+    // Retira espaços em branco para evitar erros bobos de digitação
+    const emailTratado = email.trim();
+    const senhaTratada = senha.trim();
 
-    if (usuarioDigitado === 'admin' && senha === '123456') {
-      // Se acertou as credenciais:
-      // Usamos "replace" em vez de "navigate" para que o usuário não consiga 
-      // voltar para a tela de login apertando o botão de voltar do celular.
+    // Validação básica de campos vazios
+    if (emailTratado === '' || senhaTratada === '') {
+      Alert.alert('Atenção', 'Por favor, preencha o e-mail e a senha.');
+      return;
+    }
+
+    setLoading(true); // Liga o carregamento
+
+    try {
+      // 3. COMUNICAÇÃO COM A NUVEM
+      // O Firebase vai conferir se as credenciais batem
+      const userCredential = await signInWithEmailAndPassword(auth, emailTratado, senhaTratada);
+      const user = userCredential.user;
+
+      console.log("Usuário logado com sucesso. ID:", user.uid);
+
+      // Se deu tudo certo, apagamos o histórico de navegação e mandamos para a Home
       navigation.replace('Home'); 
-    } else {
-      // Se errou:
-      Alert.alert('Erro', 'Usuário ou senha incorretos!');
+      
+    } catch (error: any) {
+      console.log("Erro no login:", error.message);
+      
+      // 4. TRADUÇÃO DOS ERROS DO FIREBASE
+      let mensagemErro = "Ocorreu um erro ao tentar acessar a conta.";
+      
+      // Nas versões mais novas, o Firebase unificou os erros de credencial inválida por segurança
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+        mensagemErro = "E-mail ou senha incorretos.";
+      } else if (error.code === 'auth/invalid-email') {
+        mensagemErro = "O formato do e-mail é inválido.";
+      }
+      
+      Alert.alert('Erro no Acesso', mensagemErro);
+    } finally {
+      setLoading(false); // Desliga o carregamento, dando erro ou não
     }
   };
 
@@ -31,28 +65,37 @@ export default function LoginScreen({ navigation }: any) {
 
       <TextInput 
         style={styles.input} 
-        placeholder="E-mail ou Usuário" 
+        placeholder="E-mail" 
         keyboardType="email-address"
         autoCapitalize="none"
-        value={email}           // Ligando o campo à variável
-        onChangeText={setEmail} // Atualizando a variável quando digita
+        value={email}           
+        onChangeText={setEmail} 
       />
       <TextInput 
         style={styles.input} 
         placeholder="Senha" 
         secureTextEntry={true} 
-        value={senha}           // Ligando o campo à variável
-        onChangeText={setSenha} // Atualizando a variável quando digita
+        value={senha}           
+        onChangeText={setSenha} 
       />
 
-      {/* 3. Colocamos o evento onPress no botão para disparar a função de login */}
-      <TouchableOpacity style={styles.buttonPrimary} onPress={handleLogin}>
-        <Text style={styles.buttonTextPrimary}>ENTRAR</Text>
+      {/* Botão de Entrar com estado de Carregamento */}
+      <TouchableOpacity 
+        style={[styles.buttonPrimary, loading && { backgroundColor: '#A55C45' }]} 
+        onPress={handleLogin}
+        disabled={loading} // Desativa o botão para não enviar duas requisições
+      >
+        {loading ? (
+          <ActivityIndicator color="#FFF" />
+        ) : (
+          <Text style={styles.buttonTextPrimary}>ENTRAR</Text>
+        )}
       </TouchableOpacity>
 
       <TouchableOpacity 
         style={styles.buttonSecondary}
         onPress={() => navigation.navigate('Cadastro')}
+        disabled={loading}
       >
         <Text style={styles.buttonTextSecondary}>CADASTRAR-SE</Text>
       </TouchableOpacity>

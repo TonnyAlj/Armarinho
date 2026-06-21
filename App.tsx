@@ -11,6 +11,7 @@ import { Feather } from '@expo/vector-icons';
 import LoginScreen from './src/screens/login/LoginScreen';
 import CadastroScreen from './src/screens/cadastro/CadastroScreen';
 import DetalhesProdutoScreen from './src/screens/detalhes/DetalhesProdutoScreen';
+import CadastroProdutoScreen from './src/screens/admin/CadastroProdutoScreen'; // <-- A tela Nova Importada Aqui!
 
 // 2. IMPORTANDO AS TELAS DAS ABAS (Menu Inferior)
 import HomeScreen from './src/screens/home/HomeScreen';
@@ -77,8 +78,11 @@ export default function App() {
           {/* A tela "Home" carrega todas as abas de uma vez */}
           <Stack.Screen name="Home" component={MainTabs} options={{ headerShown: false }} />
 
-          {/* A nova tela de Detalhes fica aqui, pois ela abre "por cima" das abas */}
+          {/* Telas que abrem "por cima" das abas */}
           <Stack.Screen name="DetalhesProduto" component={DetalhesProdutoScreen} options={{ headerShown: false }} />
+          
+          {/* O Roteamento da tela de Administrador foi adicionado aqui! */}
+          <Stack.Screen name="CadastroProduto" component={CadastroProdutoScreen} options={{ headerShown: false }} />
 
         </Stack.Navigator>
       </NavigationContainer>
