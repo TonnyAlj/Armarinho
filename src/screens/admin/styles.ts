@@ -1,19 +1,31 @@
-// Arquivo: src/screens/admin/styles.ts
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Dimensions } from 'react-native';
+import Constants from 'expo-constants';
+
+const { width } = Dimensions.get('window');
 
 export const styles = StyleSheet.create({
-  container: { padding: 25, backgroundColor: '#F7F1E5', flexGrow: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', marginBottom: 30, paddingTop: 20 },
-  headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#A55C45', marginLeft: 15 },
-  label: { color: '#A55C45', fontSize: 14, fontWeight: 'bold', marginBottom: 8, marginTop: 10 },
-  input: { backgroundColor: '#FFF', borderWidth: 1, borderColor: '#EADCC8', borderRadius: 8, padding: 12, fontSize: 16, marginBottom: 15 },
-  row: { flexDirection: 'row', justifyContent: 'space-between' },
-  halfInput: { width: '48%' },
-  categoryPicker: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 },
-  catOption: { paddingHorizontal: 15, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: '#A55C45', backgroundColor: '#FFF' },
-  catOptionActive: { backgroundColor: '#A55C45' },
-  catText: { color: '#A55C45', fontWeight: '500' },
-  catTextActive: { color: '#FFF' },
-  saveButton: { backgroundColor: '#C56A47', padding: 18, borderRadius: 8, alignItems: 'center', marginTop: 20 },
-  saveButtonText: { color: '#FFF', fontWeight: 'bold', fontSize: 16 }
+  container: { flex: 1, backgroundColor: '#F7F1E5' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: Constants.statusBarHeight + 20, paddingHorizontal: 20, paddingBottom: 15 },
+  headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#A55C45' },
+  
+  categoryScrollContent: { paddingHorizontal: 20, paddingBottom: 5 },
+  categoryItem: { alignItems: 'center', marginRight: 22 },
+  categoryCircle: { width: 58, height: 58, borderRadius: 29, backgroundColor: '#FFF', justifyContent: 'center', alignItems: 'center', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 3, borderWidth: 1, borderColor: '#EADCC8', marginBottom: 6 },
+  categoryText: { fontSize: 13, color: '#A55C45', fontWeight: '500' },
+
+  promoContainer: { paddingLeft: 20, marginBottom: 25 },
+  promoBanner: { width: width * 0.75, maxWidth: 400, height: 160, borderRadius: 15, marginRight: 15, overflow: 'hidden', backgroundColor: '#EADCC8' },
+  promoImage: { width: '100%', height: '100%', position: 'absolute', resizeMode: 'cover' },
+  promoOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.3)', padding: 15, justifyContent: 'flex-end' },
+  promoTag: { backgroundColor: '#E63946', color: '#FFF', alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4, fontSize: 10, fontWeight: 'bold', marginBottom: 5, overflow: 'hidden' },
+  promoName: { color: '#FFF', fontSize: 18, fontWeight: 'bold', marginBottom: 2, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 3 },
+  promoPrice: { color: '#FFF', fontSize: 16, fontWeight: 'bold', textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 3 },
+
+  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#333', marginHorizontal: 20, marginBottom: 15 },
+  productScroll: { paddingHorizontal: 20, paddingBottom: 30 },
+  productCard: { width: 160, backgroundColor: '#FFF', borderRadius: 12, padding: 10, marginRight: 15, borderWidth: 1, borderColor: '#EADCC8', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 3 },
+  productImagePlaceholder: { width: '100%', height: 120, borderRadius: 8, backgroundColor: '#F7F1E5', justifyContent: 'center', alignItems: 'center', marginBottom: 10, overflow: 'hidden' },
+  productName: { fontSize: 14, fontWeight: 'bold', color: '#333', marginBottom: 5, height: 38 },
+  productPrice: { fontSize: 16, color: '#C56A47', fontWeight: 'bold', marginBottom: 10 },
+  addButton: { backgroundColor: '#C56A47', width: 30, height: 30, borderRadius: 15, justifyContent: 'center', alignItems: 'center', alignSelf: 'flex-end', position: 'absolute', bottom: 10, right: 10 }
 });

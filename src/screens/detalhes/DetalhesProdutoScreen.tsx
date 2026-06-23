@@ -1,93 +1,101 @@
 // Arquivo: src/screens/detalhes/DetalhesProdutoScreen.tsx
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, Image, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
-import { styles } from './styles'; 
+import { styles } from './styles';
+
+import { auth, db } from '../../services/firebaseConfig';
+import { doc, getDoc, collection, addDoc } from 'firebase/firestore';
 
 export default function DetalhesProdutoScreen({ route, navigation }: any) {
-  // 1. RECEBENDO OS PARÂMETROS DA TELA ANTERIOR
-  // Se a tela anterior passou um produto, nós usamos. Se não, usamos o MOCK de segurança.
-  const produto = route.params?.produto || {
-    id: '1',
-    nome: 'Fio Círculo Amigurumi (Cor 2012)',
-    preco: 14.90,
-    categoria: 'Linhas',
-    descricao: 'Fio 100% algodão mercerizado, ideal para a confecção de amigurumis, chaveirinhos detalhados e tapetes de alta qualidade. Possui espessura perfeita para garantir que a sua peça fique firme e facilita a técnica de costura invisível para um acabamento impecável.',
-    estoque: 12
-  };
+  const { produto } = route.params; 
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adicionando, setAdicionando] = useState(false);
 
-  // 2. ESTADO PARA A QUANTIDADE
-  const [quantidade, setQuantidade] = useState(1);
+  useEffect(() => {
+    const checkAdmin = async () => {
+      if (auth.currentUser) {
+        const userDoc = await getDoc(doc(db, 'usuarios', auth.currentUser.uid));
+        if (userDoc.exists() && userDoc.data().isAdmin) setIsAdmin(true);
+      }
+    };
+    checkAdmin();
+  }, []);
 
-  // 3. FUNÇÕES DE CONTROLE
-  const alterarQuantidade = (operacao: 'somar' | 'subtrair') => {
-    if (operacao === 'somar') {
-      if (quantidade < produto.estoque) setQuantidade(quantidade + 1);
-    } else {
-      if (quantidade > 1) setQuantidade(quantidade - 1);
+  // FUNÇÃO NOVA: ADICIONAR AO CARRINHO NO FIRESTORE
+  const handleAdicionarAoCarrinho = async () => {
+    if (!auth.currentUser) {
+      Alert.alert("Aviso", "Você precisa estar logado para comprar.");
+      return;
+    }
+
+    setAdicionando(true);
+    try {
+      await addDoc(collection(db, 'carrinho'), {
+        userId: auth.currentUser.uid,
+        produtoId: produto.id,
+        nome: produto.nome,
+        preco: produto.preco,
+        imagemUrl: produto.imagemUrl || '',
+        quantidade: 1, // Por padrão adiciona 1, você pode expandir isso no futuro
+        dataAdicao: new Date().toISOString()
+      });
+      
+      Alert.alert("Sucesso!", "Produto adicionado ao seu carrinho.", [
+        { text: "Continuar Comprando", onPress: () => navigation.goBack() },
+        { text: "Ir para Carrinho", onPress: () => navigation.navigate('CarrinhoTab') }
+      ]);
+    } catch (error) {
+      Alert.alert("Erro", "Não foi possível adicionar ao carrinho.");
+    } finally {
+      setAdicionando(false);
     }
   };
 
-  const adicionarAoCarrinho = () => {
-    const totalParcial = (produto.preco * quantidade).toFixed(2).replace('.', ',');
-    Alert.alert(
-      "Adicionado!", 
-      `${quantidade}x ${produto.nome} no valor total de R$ ${totalParcial} foram para o seu carrinho.`,
-      [{ text: "Continuar Comprando", onPress: () => navigation.goBack() }]
-    );
-  };
-
   return (
-    <View style={styles.container}>
-      
-      {/* CABEÇALHO FLUTUANTE (Botão de Voltar) */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Feather name="arrow-left" size={24} color="#A55C45" />
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView showsVerticalScrollIndicator={false}>
-        
-        {/* ÁREA DA IMAGEM DO PRODUTO (Mock com Ícone) */}
+    <View style={{ flex: 1, backgroundColor: '#F7F1E5' }}>
+      <ScrollView>
         <View style={styles.imageContainer}>
-          <MaterialCommunityIcons name="basket-outline" size={100} color="#C56A47" />
+          {produto.imagemUrl ? (
+            <Image source={{ uri: produto.imagemUrl }} style={styles.productImage} />
+          ) : (
+            <View style={[styles.productImage, { backgroundColor: '#EADCC8', justifyContent: 'center', alignItems: 'center' }]}>
+               <MaterialCommunityIcons name="image-off" size={60} color="#A55C45" />
+            </View>
+          )}
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Feather name="arrow-left" size={24} color="#FFF" />
+          </TouchableOpacity>
         </View>
 
-        {/* INFORMAÇÕES DO PRODUTO */}
-        <View style={styles.infoContainer}>
-          <Text style={styles.categoryText}>{produto.categoria}</Text>
-          <Text style={styles.productName}>{produto.nome}</Text>
-          <Text style={styles.productPrice}>R$ {produto.preco.toFixed(2).replace('.', ',')}</Text>
-
-          <View style={styles.divider} />
-
+        <View style={styles.content}>
+          <Text style={styles.category}>{produto.categoria}</Text>
+          <Text style={styles.title}>{produto.nome}</Text>
+          <Text style={styles.price}>R$ {produto.preco.toFixed(2).replace('.', ',')}</Text>
+          
           <Text style={styles.sectionTitle}>Descrição</Text>
-          <Text style={styles.descriptionText}>{produto.descricao}</Text>
-
+          <Text style={styles.description}>{produto.descricao || "Sem descrição disponível."}</Text>
+          
+          <Text style={styles.sectionTitle}>Disponibilidade</Text>
+          <Text style={styles.stock}>{produto.estoque} unidades em estoque</Text>
         </View>
       </ScrollView>
 
-      {/* RODAPÉ FIXO (Controles e Botão de Adicionar) */}
       <View style={styles.footer}>
-        <View style={styles.quantityController}>
-          <TouchableOpacity style={styles.quantityButton} onPress={() => alterarQuantidade('subtrair')}>
-            <Feather name="minus" size={20} color="#A55C45" />
-          </TouchableOpacity>
-          
-          <Text style={styles.quantityText}>{quantidade}</Text>
-          
-          <TouchableOpacity style={styles.quantityButton} onPress={() => alterarQuantidade('somar')}>
-            <Feather name="plus" size={20} color="#A55C45" />
-          </TouchableOpacity>
-        </View>
-
-        <TouchableOpacity style={styles.addButton} onPress={adicionarAoCarrinho}>
-          <Feather name="shopping-cart" size={20} color="#FFF" />
-          <Text style={styles.addButtonText}>Adicionar</Text>
+        <TouchableOpacity style={styles.buyButton} onPress={handleAdicionarAoCarrinho} disabled={adicionando}>
+          {adicionando ? (
+            <ActivityIndicator color="#FFF" />
+          ) : (
+            <Text style={styles.buyButtonText}>ADICIONAR AO CARRINHO</Text>
+          )}
         </TouchableOpacity>
       </View>
 
+      {isAdmin && (
+        <TouchableOpacity style={styles.editFab} onPress={() => navigation.navigate('CadastroProduto', { produto: produto })}>
+          <Feather name="edit-2" size={24} color="#FFF" />
+        </TouchableOpacity>
+      )}
     </View>
   );
 }

@@ -1,4 +1,3 @@
-// Arquivo: App.tsx
 import React from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -7,13 +6,12 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Feather } from '@expo/vector-icons';
 
-// 1. IMPORTANDO AS TELAS DA PILHA (Autenticação e Telas Soltas)
 import LoginScreen from './src/screens/login/LoginScreen';
 import CadastroScreen from './src/screens/cadastro/CadastroScreen';
 import DetalhesProdutoScreen from './src/screens/detalhes/DetalhesProdutoScreen';
-import CadastroProdutoScreen from './src/screens/admin/CadastroProdutoScreen'; // <-- A tela Nova Importada Aqui!
+import CadastroProdutoScreen from './src/screens/admin/CadastroProdutoScreen';
+import GerenciarProdutosScreen from './src/screens/admin/GerenciarProdutosScreen'; // <-- Tela Nova
 
-// 2. IMPORTANDO AS TELAS DAS ABAS (Menu Inferior)
 import HomeScreen from './src/screens/home/HomeScreen';
 import BuscaScreen from './src/screens/busca/BuscaScreen';
 import CarrinhoScreen from './src/screens/carrinho/CarrinhoScreen';
@@ -23,7 +21,6 @@ import PerfilScreen from './src/screens/perfil/PerfilScreen';
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-// --- MÓDULO DE ABAS (Menu Inferior) ---
 function MainTabs() {
   return (
     <Tab.Navigator
@@ -54,36 +51,22 @@ function MainTabs() {
   );
 }
 
-// --- PILHA DE NAVEGAÇÃO PRINCIPAL ---
 export default function App() {
   return (
     <SafeAreaProvider>
       <NavigationContainer>
         <StatusBar style="auto" />
         <Stack.Navigator initialRouteName="Login">
-          
           <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
-          
           <Stack.Screen 
             name="Cadastro" 
             component={CadastroScreen} 
-            options={{ 
-              title: 'Voltar',
-              headerStyle: { backgroundColor: '#F7F1E5' },
-              headerTintColor: '#A55C45',
-              headerShadowVisible: false,
-            }} 
+            options={{ title: 'Voltar', headerStyle: { backgroundColor: '#F7F1E5' }, headerTintColor: '#A55C45', headerShadowVisible: false }} 
           />
-          
-          {/* A tela "Home" carrega todas as abas de uma vez */}
           <Stack.Screen name="Home" component={MainTabs} options={{ headerShown: false }} />
-
-          {/* Telas que abrem "por cima" das abas */}
           <Stack.Screen name="DetalhesProduto" component={DetalhesProdutoScreen} options={{ headerShown: false }} />
-          
-          {/* O Roteamento da tela de Administrador foi adicionado aqui! */}
           <Stack.Screen name="CadastroProduto" component={CadastroProdutoScreen} options={{ headerShown: false }} />
-
+          <Stack.Screen name="GerenciarProdutos" component={GerenciarProdutosScreen} options={{ headerShown: false }} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>

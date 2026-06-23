@@ -1,122 +1,174 @@
 // Arquivo: src/screens/cadastro/CadastroScreen.tsx
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+// 1. IMPORTANTE: Adicionamos o 'Platform' na importação do react-native
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, StyleSheet, Platform } from 'react-native';
+import { Feather } from '@expo/vector-icons';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import { auth, db } from '../../services/firebaseConfig';
 import { styles } from './styles';
 
-// 1. IMPORTAÇÕES DO FIREBASE (Auth e Firestore)
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore'; 
-import { auth, db } from '../../services/firebaseConfig'; 
-
 export default function CadastroScreen({ navigation }: any) {
+  // DADOS DE AUTENTICAÇÃO
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [confirmarSenha, setConfirmarSenha] = useState('');
+
+  // DADOS DE CONTATO E ENDEREÇO
   const [telefone, setTelefone] = useState('');
   const [cep, setCep] = useState('');
+  const [rua, setRua] = useState('');
   const [numero, setNumero] = useState('');
-  const [termosAceitos, setTermosAceitos] = useState(false);
-  
+  const [complemento, setComplemento] = useState('');
+  const [cidade, setCidade] = useState('');
+  const [estado, setEstado] = useState('');
+
   const [loading, setLoading] = useState(false);
 
   const handleCadastro = async () => {
-    if (!termosAceitos) {
-      Alert.alert("Atenção", "Você precisa aceitar os termos para continuar.");
+    if (!nome || !email || !senha || !confirmarSenha || !telefone || !cep || !rua || !numero || !cidade || !estado) {
+      if (Platform.OS === 'web') {
+        alert("Por favor, preencha todos os campos obrigatórios (*).");
+      } else {
+        Alert.alert("Atenção", "Por favor, preencha todos os campos obrigatórios (*).");
+      }
       return;
     }
 
-    if (email.trim() === '' || senha.trim() === '' || nome.trim() === '') {
-       Alert.alert("Atenção", "Preencha pelo menos Nome, E-mail e Senha.");
-       return;
+    if (senha !== confirmarSenha) {
+      if (Platform.OS === 'web') alert("As senhas informadas não coincidem.");
+      else Alert.alert("Erro", "As senhas informadas não coincidem.");
+      return;
     }
 
-    setLoading(true); 
+    if (senha.length < 6) {
+      if (Platform.OS === 'web') alert("A senha deve conter pelo menos 6 caracteres.");
+      else Alert.alert("Erro", "A senha deve conter pelo menos 6 caracteres.");
+      return;
+    }
+
+    setLoading(true);
 
     try {
-      // Passo 1: Cria a credencial de acesso (Login e Senha)
-      const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), senha.trim());
-      const user = userCredential.user;
+      // 1. Cria o usuário no Firebase Auth
+      const resultadoAuth = await createUserWithEmailAndPassword(auth, email.trim(), senha);
+      const usuarioLogado = resultadoAuth.user;
 
-      // Passo 2: Salva os dados extras no Banco de Dados (Firestore)
-      // Usamos o UID (ID único) do usuário como o nome do documento para facilitar a busca depois!
-      await setDoc(doc(db, 'usuarios', user.uid), {
+      // 2. Salva o perfil estendido com o endereço completo no Firestore
+      await setDoc(doc(db, 'usuarios', usuarioLogado.uid), {
         nome: nome.trim(),
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
         telefone: telefone.trim(),
-        endereco: {
-          cep: cep.trim(),
-          numero: numero.trim()
-        },
-        // O PULO DO GATO: Todo mundo nasce como cliente normal
         isAdmin: false, 
-        dataCadastro: new Date().toISOString()
+        endereco: {
+          rua: rua.trim(),
+          numero: numero.trim(),
+          complemento: complemento.trim(),
+          cidade: cidade.trim(), // <-- LINHA CORRIGIDA AQUI!
+          estado: estado.trim().toUpperCase(),
+          cep: cep.trim()
+        },
+        dataCriacao: new Date().toISOString()
       });
 
-      console.log("Usuário completo criado com sucesso no Firestore!");
-      
-      Alert.alert("Sucesso!", "Conta criada com sucesso!", [
-        { text: "OK", onPress: () => navigation.replace('Home') }
-      ]);
+      if (Platform.OS === 'web') {
+        alert("Sucesso! Sua conta foi criada com todos os dados salvos!");
+        navigation.navigate('Login');
+      } else {
+        Alert.alert("Sucesso!", "Sua conta foi criada com todos os dados salvos!", [
+          { text: "Entrar", onPress: () => navigation.navigate('Login') }
+        ]);
+      }
 
     } catch (error: any) {
-      console.log("Erro no cadastro:", error.message);
-      
-      let mensagemErro = "Ocorreu um erro ao criar a conta.";
+      console.error(error);
+      let mensagemErro = "Não foi possível realizar o cadastro.";
       if (error.code === 'auth/email-already-in-use') {
-        mensagemErro = "Este e-mail já está cadastrado.";
-      } else if (error.code === 'auth/weak-password') {
-        mensagemErro = "A senha deve ter pelo menos 6 caracteres.";
+        mensagemErro = "Este e-mail já está sendo utilizado em outra conta.";
+      } else if (error.code === 'auth/invalid-email') {
+        mensagemErro = "O formato do e-mail digitado é inválido.";
       }
-      
-      Alert.alert("Erro", mensagemErro);
+
+      if (Platform.OS === 'web') {
+        alert(mensagemErro);
+      } else {
+        Alert.alert("Erro no Cadastro", mensagemErro);
+      }
     } finally {
-      setLoading(false); 
+      setLoading(false);
     }
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
+      <Text style={styles.title}>Criar Conta</Text>
+      <Text style={styles.subtitle}>Insira seus dados para começar a usar o app</Text>
+
+      <Text style={styles.sectionHeader}>Dados de Acesso</Text>
       
-      <View style={styles.headerBox}>
-        <Text style={styles.headerText}>Crie sua Conta</Text>
-      </View>
+      <Text style={styles.label}>Nome Completo *</Text>
+      <TextInput style={styles.input} value={nome} onChangeText={setNome} placeholder="Seu nome completo" />
 
-      <Text style={styles.label}>Nome Completo</Text>
-      <TextInput style={styles.input} value={nome} onChangeText={setNome} />
-
-      <Text style={styles.label}>E-mail</Text>
-      <TextInput style={styles.input} keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={setEmail} />
-
-      <Text style={styles.label}>Senha (Mín. 6 dígitos)</Text>
-      <TextInput style={styles.input} secureTextEntry={true} value={senha} onChangeText={setSenha} />
-
-      <Text style={styles.label}>Telefone</Text>
-      <TextInput style={styles.input} keyboardType="phone-pad" value={telefone} onChangeText={setTelefone} />
+      <Text style={styles.label}>E-mail *</Text>
+      <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" placeholder="exemplo@email.com" />
 
       <View style={styles.row}>
         <View style={styles.halfInput}>
-          <Text style={styles.label}>CEP</Text>
-          <TextInput style={[styles.input, { marginBottom: 0 }]} keyboardType="numeric" value={cep} onChangeText={setCep} />
+          <Text style={styles.label}>Senha *</Text>
+          <TextInput style={styles.input} value={senha} onChangeText={setSenha} secureTextEntry placeholder="Mínimo 6 dígitos" />
         </View>
         <View style={styles.halfInput}>
-            <Text style={styles.label}>Número</Text>
-            <TextInput style={[styles.input, { marginBottom: 0 }]} keyboardType="numeric" value={numero} onChangeText={setNumero} />
+          <Text style={styles.label}>Confirmar Senha *</Text>
+          <TextInput style={styles.input} value={confirmarSenha} onChangeText={setConfirmarSenha} secureTextEntry placeholder="Repita a senha" />
         </View>
       </View>
 
-      <View style={{ height: 20 }} />
+      <Text style={styles.sectionHeader}>Contato e Endereço de Entrega</Text>
 
-      <TouchableOpacity style={styles.checkboxContainer} onPress={() => setTermosAceitos(!termosAceitos)}>
-        <View style={styles.checkbox}>
-          {termosAceitos && <View style={styles.checkboxInner} />}
+      <View style={styles.row}>
+        <View style={styles.halfInput}>
+          <Text style={styles.label}>Telefone *</Text>
+          <TextInput style={styles.input} value={telefone} onChangeText={setTelefone} keyboardType="phone-pad" placeholder="(00) 00000-0000" />
         </View>
-        <Text style={styles.checkboxText}>Li e aceito os termos</Text>
+        <View style={styles.halfInput}>
+          <Text style={styles.label}>CEP *</Text>
+          <TextInput style={styles.input} value={cep} onChangeText={setCep} keyboardType="numeric" placeholder="00000-000" />
+        </View>
+      </View>
+
+      <Text style={styles.label}>Rua / Avenida *</Text>
+      <TextInput style={styles.input} value={rua} onChangeText={setRua} placeholder="Ex: Rua das Rosas" />
+
+      <View style={styles.row}>
+        <View style={styles.halfInput}>
+          <Text style={styles.label}>Número *</Text>
+          <TextInput style={styles.input} value={numero} onChangeText={setNumero} placeholder="Ex: 450" />
+        </View>
+        <View style={styles.halfInput}>
+          <Text style={styles.label}>Complemento</Text>
+          <TextInput style={styles.input} value={complemento} onChangeText={setComplemento} placeholder="Apto, Bloco, Casa (Opcional)" />
+        </View>
+      </View>
+
+      <View style={styles.row}>
+        <View style={styles.halfInput}>
+          <Text style={styles.label}>Cidade *</Text>
+          <TextInput style={styles.input} value={cidade} onChangeText={setCidade} placeholder="Sua cidade" />
+        </View>
+        <View style={styles.halfInput}>
+          <Text style={styles.label}>Estado (UF) *</Text>
+          <TextInput style={styles.input} value={estado} onChangeText={setEstado} placeholder="Ex: PR" maxLength={2} autoCapitalize="characters" />
+        </View>
+      </View>
+
+      <TouchableOpacity style={styles.button} onPress={handleCadastro} disabled={loading}>
+        {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.buttonText}>CADASTRAR E ENTRAR</Text>}
       </TouchableOpacity>
 
-      <TouchableOpacity style={[styles.buttonPrimary, loading && { backgroundColor: '#A55C45' }]} onPress={handleCadastro} disabled={loading}>
-        {loading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.buttonTextPrimary}>CRIAR MINHA CONTA</Text>}
+      <TouchableOpacity style={styles.loginLink} onPress={() => navigation.navigate('Login')} disabled={loading}>
+        <Text style={styles.loginLinkText}>Já tem uma conta? Faça Login</Text>
       </TouchableOpacity>
-
     </ScrollView>
   );
 }

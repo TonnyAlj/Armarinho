@@ -1,93 +1,114 @@
 // Arquivo: src/screens/busca/BuscaScreen.tsx
-import React, { useState } from 'react';
-import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, FlatList, Image, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
-import styles from './styles';
 
-// 1. DADOS SIMULADOS (Mock): Uma lista de objetos que imita o retorno de um banco de dados
-const PRODUTOS_MOCK = [
-  { id: '1', nome: 'Fio Amigurumi Círculo', categoria: 'Linhas', preco: 'R$ 14,90' },
-  { id: '2', nome: 'Barbante Especial para Sousplat de Luxo', categoria: 'Barbantes', preco: 'R$ 22,50' },
-  { id: '3', nome: 'Lã Premium para Cachecol Masculino', categoria: 'Lãs', preco: 'R$ 18,90' },
-  { id: '4', nome: 'Agulha de Crochê 3.5mm', categoria: 'Agulhas', preco: 'R$ 12,00' },
-  { id: '5', nome: 'Enchimento Fibra Siliconada', categoria: 'Acessórios', preco: 'R$ 15,50' },
-];
+import { collection, onSnapshot } from 'firebase/firestore';
+import { db } from '../../services/firebaseConfig';
 
-const CATEGORIAS = ['Todos', 'Linhas', 'Barbantes', 'Lãs', 'Agulhas', 'Acessórios'];
+export default function BuscaScreen({ navigation }: any) {
+  const [termoBusca, setTermoBusca] = useState('');
+  const [produtosIniciais, setProdutosIniciais] = useState<any[]>([]);
+  const [produtosFiltrados, setProdutosFiltrados] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-export default function BuscaScreen() {
-  // 2. ESTADOS (useState): Eles são a "memória" do componente. 
-  // Sempre que 'busca' ou 'categoriaAtiva' mudam, o React atualiza a tela automaticamente.
-  const [busca, setBusca] = useState('');
-  const [categoriaAtiva, setCategoriaAtiva] = useState('Todos');
+  // 1. Busca todos os produtos do banco uma vez
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, 'produtos'), (snapshot) => {
+      const lista = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setProdutosIniciais(lista);
+      setProdutosFiltrados(lista); // Começa mostrando tudo
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
 
-  // 3. LÓGICA DE FILTRO: Misturamos a barra de pesquisa com o botão de categoria
-  const produtosFiltrados = PRODUTOS_MOCK.filter(produto => {
-    const matchCategoria = categoriaAtiva === 'Todos' || produto.categoria === categoriaAtiva;
-    const matchBusca = produto.nome.toLowerCase().includes(busca.toLowerCase());
-    return matchCategoria && matchBusca;
-  });
+  // 2. Filtra a lista sempre que o usuário digitar algo
+  const handleBusca = (texto: string) => {
+    setTermoBusca(texto);
+    if (texto === '') {
+      setProdutosFiltrados(produtosIniciais);
+    } else {
+      const filtrados = produtosIniciais.filter(produto => 
+        produto.nome.toLowerCase().includes(texto.toLowerCase()) ||
+        produto.categoria.toLowerCase().includes(texto.toLowerCase())
+      );
+      setProdutosFiltrados(filtrados);
+    }
+  };
 
   return (
     <View style={styles.container}>
-      
       {/* BARRA DE PESQUISA */}
-      <View style={styles.searchContainer}>
-        <Feather name="search" size={20} color="#A55C45" />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Buscar fios, agulhas, acessórios..."
-          value={busca}
-          onChangeText={setBusca} // Atualiza a "memória" a cada letra digitada
-        />
+      <View style={styles.header}>
+        <View style={styles.searchBar}>
+          <Feather name="search" size={20} color="#A55C45" />
+          <TextInput 
+            style={styles.searchInput}
+            placeholder="O que você está procurando?"
+            value={termoBusca}
+            onChangeText={handleBusca}
+            autoCapitalize="none"
+          />
+          {termoBusca.length > 0 && (
+            <TouchableOpacity onPress={() => handleBusca('')}>
+              <Feather name="x-circle" size={20} color="#A55C45" />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
-      {/* LISTA HORIZONTAL DE CATEGORIAS */}
-      <View>
+      {/* RESULTADOS DA BUSCA */}
+      {loading ? (
+        <ActivityIndicator size="large" color="#C56A47" style={{ marginTop: 50 }} />
+      ) : (
         <FlatList
-          horizontal // Faz a lista rolar para os lados
-          showsHorizontalScrollIndicator={false}
-          data={CATEGORIAS}
-          keyExtractor={(item) => item}
-          contentContainerStyle={styles.categoryList}
+          data={produtosFiltrados}
+          keyExtractor={item => item.id}
+          contentContainerStyle={{ padding: 20 }}
+          ListEmptyComponent={() => (
+            <View style={{ alignItems: 'center', marginTop: 50 }}>
+              <Feather name="frown" size={50} color="#EADCC8" />
+              <Text style={{ marginTop: 15, color: '#A55C45', fontSize: 16 }}>Nenhum produto encontrado.</Text>
+            </View>
+          )}
           renderItem={({ item }) => (
             <TouchableOpacity 
-              // Se a categoria for a ativa, aplicamos um estilo diferente (botão preenchido)
-              style={[styles.categoryButton, categoriaAtiva === item && styles.categoryButtonActive]}
-              onPress={() => setCategoriaAtiva(item)}
+              style={styles.card}
+              onPress={() => navigation.navigate('DetalhesProduto', { produto: item })}
             >
-              <Text style={[styles.categoryText, categoriaAtiva === item && styles.categoryTextActive]}>
-                {item}
-              </Text>
+              {item.imagemUrl ? (
+                <Image source={{ uri: item.imagemUrl }} style={styles.img} />
+              ) : (
+                <View style={[styles.img, { backgroundColor: '#EADCC8', justifyContent: 'center', alignItems: 'center' }]}>
+                  <MaterialCommunityIcons name="image-off" size={30} color="#A55C45" />
+                </View>
+              )}
+              
+              <View style={styles.info}>
+                <Text style={styles.categoria}>{item.categoria}</Text>
+                <Text style={styles.nome} numberOfLines={2}>{item.nome}</Text>
+                <Text style={styles.preco}>R$ {item.preco.toFixed(2).replace('.', ',')}</Text>
+              </View>
+              <Feather name="chevron-right" size={24} color="#A55C45" />
             </TouchableOpacity>
           )}
         />
-      </View>
-
-      {/* LISTA VERTICAL DE PRODUTOS */}
-      <FlatList
-        data={produtosFiltrados}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.productList}
-        // renderItem é como o React Native desenha CADA item da sua lista
-        renderItem={({ item }) => (
-          <View style={styles.productCard}>
-            <View style={styles.productInfo}>
-              <Text style={styles.productName}>{item.nome}</Text>
-              <Text style={styles.productCategory}>{item.categoria}</Text>
-              <Text style={styles.productPrice}>{item.preco}</Text>
-            </View>
-            <TouchableOpacity style={styles.addButton}>
-              <Feather name="plus" size={20} color="#FFF" />
-            </TouchableOpacity>
-          </View>
-        )}
-        // O que mostrar se a pesquisa não encontrar nada:
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>Nenhum produto encontrado.</Text>
-        }
-      />
+      )}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#F7F1E5' },
+  header: { paddingTop: Constants.statusBarHeight + 20, paddingHorizontal: 20, paddingBottom: 15, backgroundColor: '#FFF', borderBottomWidth: 1, borderBottomColor: '#EADCC8' },
+  searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F7F1E5', borderRadius: 10, paddingHorizontal: 15, height: 50, borderWidth: 1, borderColor: '#EADCC8' },
+  searchInput: { flex: 1, marginLeft: 10, fontSize: 16, color: '#333' },
+  card: { flexDirection: 'row', backgroundColor: '#FFF', borderRadius: 12, padding: 12, marginBottom: 15, alignItems: 'center', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 3, borderWidth: 1, borderColor: '#EADCC8' },
+  img: { width: 80, height: 80, borderRadius: 8 },
+  info: { flex: 1, marginLeft: 15 },
+  categoria: { fontSize: 12, color: '#A55C45', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: 4 },
+  nome: { fontSize: 16, fontWeight: 'bold', color: '#333', marginBottom: 8 },
+  preco: { fontSize: 18, color: '#C56A47', fontWeight: 'bold' }
+});
