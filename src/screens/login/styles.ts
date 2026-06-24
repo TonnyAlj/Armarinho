@@ -29,6 +29,8 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 15, 
     marginBottom: 15, 
     backgroundColor: '#FFF',
+    color: '#333', // <-- Garante que o texto digitado e a senha fiquem escuros e visíveis
+    fontSize: 16,  // Melhora a legibilidade do que está sendo digitado
   },
   buttonPrimary: {
     backgroundColor: '#C56A47', 

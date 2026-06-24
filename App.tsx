@@ -10,7 +10,8 @@ import LoginScreen from './src/screens/login/LoginScreen';
 import CadastroScreen from './src/screens/cadastro/CadastroScreen';
 import DetalhesProdutoScreen from './src/screens/detalhes/DetalhesProdutoScreen';
 import CadastroProdutoScreen from './src/screens/admin/CadastroProdutoScreen';
-import GerenciarProdutosScreen from './src/screens/admin/GerenciarProdutosScreen'; // <-- Tela Nova
+import GerenciarProdutosScreen from './src/screens/admin/GerenciarProdutosScreen';
+import GerenciarPedidosScreen from './src/screens/admin/GerenciarPedidosScreen';
 
 import HomeScreen from './src/screens/home/HomeScreen';
 import BuscaScreen from './src/screens/busca/BuscaScreen';
@@ -67,6 +68,7 @@ export default function App() {
           <Stack.Screen name="DetalhesProduto" component={DetalhesProdutoScreen} options={{ headerShown: false }} />
           <Stack.Screen name="CadastroProduto" component={CadastroProdutoScreen} options={{ headerShown: false }} />
           <Stack.Screen name="GerenciarProdutos" component={GerenciarProdutosScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="GerenciarPedidos" component={GerenciarPedidosScreen} options={{ headerShown: false }} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>

@@ -252,6 +252,15 @@ export default function PerfilScreen({ navigation }: any) {
         {isAdmin && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Painel do Lojista</Text>
+            
+            <MenuItem 
+              icon="truck" 
+              title="Gerenciar Pedidos dos Clientes" 
+              onPress={() => {
+              navigation.getParent()?.navigate('GerenciarPedidos');
+              }} 
+            />
+            
             <MenuItem icon="list" title="Gerenciar Vitrine (Editar/Excluir)" onPress={() => navigation.navigate('GerenciarProdutos')} />
             <MenuItem icon="plus-square" title="Cadastrar Novo Produto" onPress={() => navigation.navigate('CadastroProduto')} />
           </View>
