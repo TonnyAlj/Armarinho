@@ -35,30 +35,62 @@ export default function CarrinhoScreen({ navigation }: any) {
   };
 
   const handleFinalizarCompra = async () => {
-    if (itensCarrinho.length === 0) return;
+    // Força a busca do usuário diretamente da instância ativa do Firebase Auth
+    const usuarioLogado = auth.currentUser;
+
+    if (!usuarioLogado) {
+      Alert.alert("Erro de Sessão", "Não encontramos nenhum usuário logado. Faça login novamente.");
+      return;
+    }
+
+    if (itensCarrinho.length === 0) {
+      Alert.alert("Carrinho Vazio", "Adicione produtos antes de finalizar.");
+      return;
+    }
+
     setFinalizando(true);
 
     try {
-      // 1. Gera o Pedido Oficial na coleção 'pedidos'
-      await addDoc(collection(db, 'pedidos'), {
-        userId: auth.currentUser?.uid,
-        itens: itensCarrinho.map(item => ({ nome: item.nome, preco: item.preco, quantidade: item.quantidade })),
-        total: totalCarrinho,
-        status: 'Em separação', // Status inicial do pedido
-        dataPedido: new Date().toISOString()
-      });
+      const totalPedido = totalCarrinho;
 
-      // 2. Limpa o carrinho (apaga os documentos da coleção carrinho)
-      for (const item of itensCarrinho) {
-        await deleteDoc(doc(db, 'carrinho', item.id));
-      }
+      const dadosDoPedido = {
+        // Envia o UID limpo e garante que é uma String estável
+        clienteId: String(usuarioLogado.uid).trim(), 
+        clienteEmail: usuarioLogado.email,
+        data: new Date().toISOString(), 
+        total: totalPedido,
+        status: 'Pendente', 
+        itens: itensCarrinho.map(item => ({
+          produtoId: item.id,
+          nome: item.nome,
+          precoUnitario: item.preco,
+          quantidade: item.quantidade
+        }))
+      };
 
-      Alert.alert("Pedido Confirmado!", "Sua compra foi realizada com sucesso.", [
-        { text: "Ver Meus Pedidos", onPress: () => navigation.navigate('PedidosTab') }
-      ]);
+      // LOG DE DIAGNÓSTICO (Aparecerá no seu Web LOG do terminal)
+      console.log("=========================================");
+      console.log("GRAVANDO PEDIDO NO FIRESTORE:");
+      console.log("E-mail do Comprador:", usuarioLogado.email);
+      console.log("UID do Comprador (clienteId):", usuarioLogado.uid);
+      console.log("=========================================");
+
+      await addDoc(collection(db, 'pedidos'), dadosDoPedido);
+      
+      setFinalizando(false);
+      setItensCarrinho([]); // Limpa o carrinho
+
+      Alert.alert(
+        "Sucesso!", 
+        "Seu pedido foi realizado com sucesso.",
+        [{ text: "Ver Meus Pedidos", onPress: () => navigation.navigate('PedidosTab') }]
+      );
+
     } catch (error) {
-      Alert.alert("Erro", "Falha ao processar pagamento.");
+      console.error("Erro ao gravar pedido:", error);
+      Alert.alert("Erro", "Não foi possível finalizar sua compra.");
     } finally {
+      setLoading(false);
       setFinalizando(false);
     }
   };

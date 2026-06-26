@@ -1,10 +1,17 @@
 // Arquivo: src/screens/admin/GerenciarPedidosScreen.tsx
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Modal, Alert } from 'react-native';
-import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { collection, query, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../services/firebaseConfig';
+
+interface ItemPedido {
+  produtoId: string;
+  nome: string;
+  precoUnitario: number;
+  quantidade: number;
+}
 
 interface Pedido {
   id: string;
@@ -13,6 +20,7 @@ interface Pedido {
   data: string;
   total: number;
   status: string;
+  itens?: ItemPedido[];
 }
 
 export default function GerenciarPedidosScreen({ navigation }: any) {
@@ -56,7 +64,7 @@ export default function GerenciarPedidosScreen({ navigation }: any) {
       await updateDoc(doc(db, 'pedidos', pedidoSelecionado), { status: novoStatus });
       setModalVisible(false); 
     } catch (error) {
-      Alert.alert("Erro", "Não foi possível atualizar o status no banco de dados.");
+      Alert.alert("Erro", "Não foi possível atualizar o status.");
     }
   };
 
@@ -104,12 +112,24 @@ export default function GerenciarPedidosScreen({ navigation }: any) {
                 <Text style={styles.boldLabel}>Data: </Text> 
                 {pedido.data 
                   ? `${new Date(pedido.data).toLocaleDateString('pt-BR')} às ${new Date(pedido.data).toLocaleTimeString('pt-BR').slice(0, 5)}`
-                  : 'Data não registrada no sistema'}
+                  : 'Data não registrada'}
               </Text>
+
+              {/* LISTA DOS PRODUTOS COMPRADOS EXIBIDA PARA O ADM */}
+              {pedido.itens && pedido.itens.length > 0 && (
+                <View style={styles.produtosContainer}>
+                  <Text style={styles.produtosTitle}>Produtos para Separar:</Text>
+                  {pedido.itens.map((item, index) => (
+                    <Text key={index} style={styles.produtoItem}>
+                      • {item.nome} <Text style={styles.produtoQtd}>x{item.quantidade}</Text>
+                    </Text>
+                  ))}
+                </View>
+              )}
               
               <Text style={styles.infoText}>
                 <Text style={styles.boldLabel}>Valor Total: </Text> 
-                R$ {pedido.total ? pedido.total.toFixed(2).replace('.', ',') : '0,00'}
+                <Text style={styles.totalDestaque}>R$ {pedido.total ? pedido.total.toFixed(2).replace('.', ',') : '0,00'}</Text>
               </Text>
 
               <TouchableOpacity 
@@ -171,6 +191,14 @@ const styles = StyleSheet.create({
   statusText: { color: '#FFF', fontSize: 12, fontWeight: 'bold' },
   infoText: { fontSize: 15, color: '#333', marginBottom: 6 },
   boldLabel: { fontWeight: '700', color: '#555' },
+  
+  // NOVOS ESTILOS PARA EXIBIR OS PRODUTOS NO CARD DO ADM
+  produtosContainer: { backgroundColor: '#F7F1E5', borderRadius: 8, padding: 10, marginVertical: 10, borderWidth: 1, borderColor: '#EADCC8' },
+  produtosTitle: { fontSize: 14, fontWeight: 'bold', color: '#A55C45', marginBottom: 5 },
+  produtoItem: { fontSize: 14, color: '#444', marginBottom: 3 },
+  produtoQtd: { fontWeight: 'bold', color: '#C56A47' },
+  totalDestaque: { color: '#C56A47', fontWeight: 'bold' },
+
   actionButton: { backgroundColor: '#4A90E2', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 12, borderRadius: 8, marginTop: 12 },
   buttonIcon: { marginRight: 8 },
   actionButtonText: { color: '#FFF', fontWeight: 'bold', fontSize: 15 },
